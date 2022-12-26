@@ -44,23 +44,6 @@ class ExplosionTest(game: Game):BaseScreen(game) {
         debugDrawer.begin(camera)
         dynamicsWorld?.debugDrawWorld()
         shootRocket()
-        /*var rocketPosition=Vector3()
-        for(body in bodies) {
-            if(body.userValue==1){
-                rocketPosition=body.centerOfMassPosition
-            }
-        }
-        for(body in bodies) {
-            var tmp=Vector3()
-            if(body.userValue!=1){
-                tmp=body.centerOfMassPosition
-            }
-            debugDrawer.drawLine(tmp, rocketPosition, Vector3(1f, 1f, 1f))
-
-        }
-
-         */
-
         //if the rocket touches the ground, make it explode (need a contact listener)
         debugDrawer.end()
     }
@@ -181,81 +164,6 @@ class ExplosionTest(game: Game):BaseScreen(game) {
 
     inner class MyContactListener(var world: btDynamicsWorld?, var bodies:ArrayList<btRigidBody>, var debugDrawer: DebugDrawer):ContactListener() {
 
-        /*override fun onContactAdded(
-            colObj0: btCollisionObject?,
-            partId0: Int,
-            index0: Int,
-            colObj1: btCollisionObject?,
-            partId1: Int,
-            index1: Int
-        ): Boolean {
-            //it works but the modelInstnce still remains, i'll work it out later
-            if (colObj0 != null) {
-                if(colObj0.userValue==1){
-                    var rocketPosition=(colObj0 as btRigidBody).centerOfMassPosition
-                    for(body in bodies){
-                        //calculate distance from the rocket
-                        var tmp = Vector3(0f, 0f, 0f)
-                        if(body.userValue!=1){
-                            tmp=body.centerOfMassPosition
-                        }else{
-                            tmp=Vector3(0f,0f,0f)
-                        }
-                        //getTranslation populates a vector3 with the transform 3d position
-                        var distanceVector = Vector3(tmp.sub(rocketPosition))
-
-                        //debugDrawer.drawLine(tmp, (colObj0 as btRigidBody).centerOfMassPosition, Vector3(1f, 1f, 1f))
-
-                        var explosionForce=1000f
-                        if(body.userValue!=1) {
-                            body.activate()
-                            body.applyCentralImpulse(
-                                Vector3(
-                                    distanceVector.x * explosionForce, distanceVector.y * explosionForce, distanceVector.z * explosionForce
-                                )
-                            )
-                            //println("Colobj0 touched ground")
-                        }
-                    }
-                }
-            }
-            if (colObj1 != null) {
-                if(colObj1.userValue==1){
-                    var rocketPosition=(colObj1 as btRigidBody).centerOfMassPosition
-                    //println(rocketPosition)
-                    for(body in bodies){
-                        //calculate distance from the rocket
-                        var tmp= Vector3()
-                        //getTranslation populates a vector3 with the transform 3d position
-                        if(body.userValue!=1){
-                            tmp=body.centerOfMassPosition
-                        }else{
-                            tmp=Vector3(0f,0f,0f)
-                        }
-                        println(tmp)
-                        var distanceVector = Vector3(tmp.sub(rocketPosition))
-                        //println(distanceVector) //distance vector is always 0...why?
-                        var explosionForce=1000f
-                        if(body.userValue!=1) {
-                            body.activate()
-                            body.applyCentralImpulse(
-                                Vector3(
-                                    distanceVector.x * explosionForce, distanceVector.y * explosionForce, distanceVector.z * explosionForce
-                                )
-                            )
-                            //println("Colobj1 touched ground")
-                        }
-                    }
-                }
-            }
-            //if(colObj0?.userValue==1) world?.removeRigidBody(colObj0 as btRigidBody)
-            //if(colObj1?.userValue==1) world?.removeRigidBody(colObj1 as btRigidBody)
-
-            return true
-        }
-
-         */
-
         override fun onContactAdded(
             userValue0: Int,
             partId0: Int,
@@ -291,7 +199,7 @@ class ExplosionTest(game: Game):BaseScreen(game) {
                         // because I kept using centerofmassposition)
                         println(tmp)
                         var distanceVector = Vector3(tmp.sub(rocket.centerOfMassPosition))
-                        //println(distanceVector) //it's still 0
+
                         var explosionForce = 1f
                         (objs.atConst(i) as btRigidBody).applyCentralImpulse(distanceVector * explosionForce)
                     }

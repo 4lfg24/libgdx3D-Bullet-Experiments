@@ -5,6 +5,8 @@ package com.mygame.lwjgl3
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import com.mygame.MyGame
+import com.mygame.otherStuff.AudioRecorderTest
+import com.mygame.otherStuff.FramebufferTest
 
 /** Launches the desktop (LWJGL3) application. */
 fun main() {

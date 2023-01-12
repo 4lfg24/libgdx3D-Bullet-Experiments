@@ -9,7 +9,7 @@ import com.mygame.Screens.*
 class MyGame : Game(){
     override fun create() {
         Bullet.init()
-        setScreen(ExplosionTest(this))
+        setScreen(RopeScreen(this))
     }
 
 }

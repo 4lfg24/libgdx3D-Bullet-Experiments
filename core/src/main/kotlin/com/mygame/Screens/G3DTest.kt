@@ -5,12 +5,15 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.g3d.Model
 import com.badlogic.gdx.graphics.g3d.ModelInstance
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.physics.bullet.Bullet
+import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher
+import com.badlogic.gdx.physics.bullet.collision.btGImpactCollisionAlgorithm
+import com.badlogic.gdx.physics.bullet.collision.btGImpactMeshShape
+import com.badlogic.gdx.physics.bullet.collision.btTriangleIndexVertexArray
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody
 import com.badlogic.gdx.utils.JsonReader
 import com.mygame.MotionState
+
 
 class G3DTest(game:Game):BaseScreen(game) {
     lateinit var alienSlimeModel:Model
@@ -28,21 +31,33 @@ class G3DTest(game:Game):BaseScreen(game) {
         //val modelBuilder = ModelBuilder() //seems like it's not necessary
         alienSlimeModel = G3dModelLoader(JsonReader()).loadModel(Gdx.files.internal("3DModels/Alien Slime.g3dj"))
         alienSlime = ModelInstance(alienSlimeModel)
-        alienSlime.transform.trn(0f, 10f, 0f)
-        renderInstances.add(alienSlime)
-        //giving it a rigid body
-        var shape= Bullet.obtainStaticNodeShape(alienSlime.nodes)
+        //alienSlime.transform.trn(0f, 1f, 0f)
+
+        //to make a shape that resembles the model we gotta first
+        //do this:
+        var modelVertexArray= btTriangleIndexVertexArray(alienSlime.model.meshParts)
+        var slimeShape= btGImpactMeshShape(modelVertexArray)
+
+        //I have to fix this
+        slimeShape.localScaling= Vector3(1f,1f,1f)
+        slimeShape.margin=1f
+        //var shape= Bullet.obtainStaticNodeShape(alienSlime.nodes)
         var localInertia=Vector3()
 
-        shape.calculateLocalInertia(1f, localInertia)
+        slimeShape.calculateLocalInertia(1f, localInertia)
+        slimeShape.updateBound()
 
-        var info= btRigidBody.btRigidBodyConstructionInfo(1f,null, shape, localInertia)
+        var info= btRigidBody.btRigidBodyConstructionInfo(1f,null, slimeShape, localInertia)
         var body= btRigidBody(info)
 
         var motionState=MotionState(alienSlime.transform)
         body.motionState=motionState
 
+        renderInstances.add(alienSlime)
         dynamicsWorld!!.addRigidBody(body)
+        //var dispatcher= dynamicsWorld!!.dispatcher
+        btGImpactCollisionAlgorithm.registerAlgorithm(dispatcher as btCollisionDispatcher)
+        //btGImpactCollisionAlgorithm.registerAlgorithm(dispatcher as btCollisionDispatcher?)
 
     }
 

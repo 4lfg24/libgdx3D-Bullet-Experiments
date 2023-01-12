@@ -25,13 +25,16 @@ import com.badlogic.gdx.physics.bullet.collision.*
 import com.badlogic.gdx.physics.bullet.dynamics.*
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody.btRigidBodyConstructionInfo
 import com.badlogic.gdx.physics.bullet.linearmath.btIDebugDraw
+import com.badlogic.gdx.physics.bullet.softbody.btSoftRigidDynamicsWorld
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.kotcrab.vis.ui.VisUI
 import com.kotcrab.vis.ui.widget.VisLabel
+import com.mygame.MotionState
 import ktx.assets.disposeSafely
+import ktx.math.times
 
 
 open class BaseScreen(var game:Game):ScreenAdapter() {
@@ -48,11 +51,12 @@ open class BaseScreen(var game:Game):ScreenAdapter() {
     private val fpsLabel: VisLabel
     //bullet3d
     var broadphase: btBroadphaseInterface?=null
-    var dynamicsWorld: btDynamicsWorld?=null
+    var dynamicsWorld: btSoftRigidDynamicsWorld? =null
     var constraintSolver: btConstraintSolver?=null
     var collisionConfig: btCollisionConfiguration?=null
     var dispatcher: btDispatcher?=null
-
+    //the floor's body
+    var floorBody:btRigidBody?=null
     //lateinit var contactListener: MyContactListener
     //debug drawer
     lateinit var debugDrawer: DebugDrawer
@@ -147,6 +151,7 @@ open class BaseScreen(var game:Game):ScreenAdapter() {
         val info = btRigidBodyConstructionInfo(0f, null, btBoxShape, Vector3.Zero)
         val body = btRigidBody(info)
         body.worldTransform = floorInstance.transform
+        floorBody=body
         renderInstances.add(floorInstance)
         dynamicsWorld?.addRigidBody(body)
     }
@@ -193,8 +198,8 @@ open class BaseScreen(var game:Game):ScreenAdapter() {
         //setting the dynamic world
         constraintSolver = btSequentialImpulseConstraintSolver()
         dynamicsWorld =
-            btDiscreteDynamicsWorld(dispatcher, broadphase, constraintSolver, collisionConfig)
-        (dynamicsWorld as btDiscreteDynamicsWorld).gravity = Vector3(0f, -9.81f, 0f)
+            btSoftRigidDynamicsWorld(dispatcher, broadphase, constraintSolver, collisionConfig)
+        dynamicsWorld!!.gravity = Vector3(0f, -9.81f, 0f)
 
         //contactListener = MyContactListener()
 
@@ -202,6 +207,75 @@ open class BaseScreen(var game:Game):ScreenAdapter() {
             debugMode = btIDebugDraw.DebugDrawModes.DBG_DrawWireframe
         }
         (dynamicsWorld as btDiscreteDynamicsWorld).debugDrawer = debugDrawer
+
+    }
+    fun createCube(x:Float, y:Float, z:Float, width: Float, height: Float, depth: Float, isDynamic:Boolean):btRigidBody{
+        val modelBuilder = ModelBuilder()
+        modelBuilder.begin()
+        val meshBuilder = modelBuilder.part(
+            "cube",
+            GL20.GL_TRIANGLES,
+            (VertexAttribute.Position().usage or VertexAttribute.Normal().usage or VertexAttribute.TexCoords(
+                0
+            ).usage).toLong(),
+            Material()
+        )
+        BoxShapeBuilder.build(meshBuilder, width, height, depth)
+        val btBoxShape = btBoxShape(Vector3(width/2, height/2, depth/2))
+        val cube = modelBuilder.end()
+        val cubeInstance = ModelInstance(cube)
+        cubeInstance.transform.trn(x, y, z)
+
+        //setting a rigid body to the floor
+        var info: btRigidBodyConstructionInfo
+        info = if(isDynamic){
+            var localInertia=Vector3()
+            btBoxShape.calculateLocalInertia(1f, localInertia)
+            btRigidBodyConstructionInfo(1f, null, btBoxShape, localInertia)
+        }else{
+            btRigidBodyConstructionInfo(0f, null, btBoxShape, Vector3.Zero)
+        }
+
+        val body = btRigidBody(info)
+        var motionState=MotionState(cubeInstance.transform)
+        body.motionState=motionState
+        floorBody=body
+        renderInstances.add(cubeInstance)
+        dynamicsWorld?.addRigidBody(body)
+        return body
+    }
+    fun shoot(){
+        val modelBuilder = ModelBuilder()
+        modelBuilder.begin()
+        val meshBuilder = modelBuilder.part(
+            "rocket",
+            GL20.GL_TRIANGLES,
+            (VertexAttribute.Position().usage or VertexAttribute.Normal().usage or VertexAttribute.TexCoords(
+                0
+            ).usage).toLong(),
+            Material()
+        )
+        BoxShapeBuilder.build(meshBuilder, 2f, 2f, 2f)
+        val btBoxShape = btBoxShape(Vector3(2f / 2f, 2f / 2f, 2f / 2f))
+        val floor = modelBuilder.end()
+        val rocket = ModelInstance(floor)
+        //getting the ray from the screen
+        var pickRay=camera.getPickRay(Gdx.input.x.toFloat(),Gdx.input.y.toFloat())
+        //it's actually ez
+        rocket.transform.trn(camera.position)
+        //setting a rigid body for the rocket
+        val info = btRigidBody.btRigidBodyConstructionInfo(1f, null, btBoxShape, Vector3.Zero)
+        val body = btRigidBody(info)
+        val motionState = MotionState(rocket.transform)
+        body.motionState = motionState
+
+        //body.collisionFlags=body.collisionFlags or btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK
+
+        renderInstances.add(rocket)
+        dynamicsWorld?.addRigidBody(body)
+
+        body!!.applyCentralForce(pickRay.direction*100f)
+
     }
 
     protected val randomColor: Color
